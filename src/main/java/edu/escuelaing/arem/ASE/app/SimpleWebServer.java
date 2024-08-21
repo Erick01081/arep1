@@ -7,8 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.concurrent.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.json.JSONObject;
+
 
 
 
@@ -50,7 +50,9 @@ class ClientHandler implements Runnable {
             if (method.equals("GET")) {
                 handleGetRequest(fileRequested, out, dataOut);
             } else if (method.equals("POST")) {
+                System.out.println("post");
                 handlePostRequest(fileRequested, in, out);
+
             }
 
         } catch (IOException e) {
@@ -59,33 +61,41 @@ class ClientHandler implements Runnable {
     }
 
     private void handlePostRequest(String fileRequested, BufferedReader in, PrintWriter out) throws IOException {
-        StringBuilder payload = new StringBuilder();
+        // Leer headers y extraer Content-Length
+        System.out.println("Prueba1");
+        int contentLength = 0;
         String line;
-
-        // Leer headers (se ignoran en este caso)
         while (!(line = in.readLine()).isEmpty()) {
+            if (line.startsWith("Content-Length:")) {
+                contentLength = Integer.parseInt(line.split(":")[1].trim());
+            }
         }
+        System.out.println("Prueba2");
 
         // Leer el cuerpo del POST
-        while (in.ready() && (line = in.readLine()) != null) {
-            payload.append(line);
+        StringBuilder payload = new StringBuilder(contentLength);
+        char[] buffer = new char[1024];
+        int bytesRead;
+        int totalBytesRead = 0;
+
+        while (totalBytesRead < contentLength && (bytesRead = in.read(buffer, 0, Math.min(buffer.length, contentLength - totalBytesRead))) != -1) {
+            payload.append(buffer, 0, bytesRead);
+            totalBytesRead += bytesRead;
         }
 
         String body = payload.toString();
+        System.out.println("Body completo: " + body);
 
-        // Extraer el nombre del archivo de la URL
+        // Extraer el nombre del archivo usando org.json
         String fileName = "";
-        String regex = "name=(.+)";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(fileRequested);
-        if (matcher.find()) {
-            fileName = matcher.group(1);
-        } else {
-            // Si no se encuentra un nombre en la URL, se puede asignar un valor por defecto o lanzar un error
+        try {
+            JSONObject json = new JSONObject(body);
+            fileName = json.getString("name");
+            System.out.println("Nombre del archivo extraído: " + fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
             fileName = "default.txt";
         }
-
-        System.out.println("File name: " + fileName);
 
         // Escribir el contenido del cuerpo en el archivo
         try (FileWriter fileWriter = new FileWriter(new File(SimpleWebServer.WEB_ROOT, fileName))) {
@@ -99,6 +109,7 @@ class ClientHandler implements Runnable {
         out.println("File created: " + fileName);
         out.flush();
     }
+
 
 
     private void handleGetRequest(String fileRequested, PrintWriter out, BufferedOutputStream dataOut) throws IOException {

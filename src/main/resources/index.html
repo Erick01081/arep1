@@ -4,46 +4,169 @@
     <title>Form Example</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input[type="submit"], input[type="button"] {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        input[type="submit"]:hover, input[type="button"]:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        #preview {
+            margin-top: 15px;
+            max-width: 100%;
+            height: auto;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-<h1>Form with GET</h1>
-<form id="getForm" onsubmit="return loadGetMsg()">
-    <label for="name">Name:</label><br>
-    <input type="text" id="name" name="name" value="John"><br><br>
-    <input type="submit" value="Submit">
-</form>
-<div id="getrespmsg"></div>
+<div class="container">
+    <h1>Form with GET</h1>
+    <form id="getForm" onsubmit="return loadGetMsg()">
+        <label for="getName">Name:</label>
+        <input type="text" id="getName" name="name" value="John">
+        <input type="submit" value="Submit">
+    </form>
+    <div id="getrespmsg" class="response"></div>
 
-<script>
-    function loadGetMsg() {
-        let nameVar = document.getElementById("name").value;
-        const xhttp = new XMLHttpRequest();
-        xhttp.onload = function() {
-            document.getElementById("getrespmsg").innerHTML = this.responseText;
+    <h1>Form From POST</h1>
+    <form onsubmit="return loadFileMsg()">
+        <label for="postName">Name:</label>
+        <input type="text" id="postName" name="name" value="John">
+        <label for="file">File:</label>
+        <input type="file" id="file" name="file" onchange="previewFile()">
+        <img id="preview" src="#" alt="Image preview">
+        <input type="submit" value="Submit">
+    </form>
+    <div id="postrespmsg" class="response"></div>
+
+    <script>
+        function loadGetMsg() {
+            let nameVar = document.getElementById("getName").value;
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                document.getElementById("getrespmsg").innerHTML = this.responseText;
+            }
+            xhttp.open("GET", "/" + nameVar);
+            xhttp.send();
+            return false; // Prevent form from submitting normally
         }
-        xhttp.open("GET", "/" + nameVar);
-        xhttp.send();
-        return false; // Prevent form from submitting normally
-    }
-</script>
 
-<h1>Form with POST</h1>
-<form action="/hellopost">
-    <label for="postname">Name:</label><br>
-    <input type="text" id="postname" name="name" value="John"><br><br>
-    <input type="button" value="Submit" onclick="loadPostMsg(postname)">
-</form>
+        function loadFileMsg() {
+            // Obtener el valor del campo name
+            let nameVar = document.getElementById("postName").value;
+            // Obtener el archivo seleccionado
+            let fileInput = document.getElementById("file");
+            let file = fileInput.files[0];
 
-<div id="postrespmsg"></div>
+            // Crear un objeto FormData para enviar los datos del formulario
+            let formData = new FormData();
+            formData.append('name', nameVar);
+            if (file) {
+                formData.append('file', file);
+            }
 
-<script>
-    function loadPostMsg(name){
-        let url = "/hellopost?name=" + name.value;
 
-        fetch (url, {method: 'POST'})
-            .then(x => x.text())
-            .then(y => document.getElementById("postrespmsg").innerHTML = y);
-    }
-</script>
+            // Enviar los datos usando Fetch API
+            fetch("/" + nameVar, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(responseText => {
+                // Mostrar la respuesta en el elemento con id 'postrespmsg'
+                document.getElementById("postrespmsg").innerHTML = responseText;
+            })
+            .catch(error => {
+                // Manejo de errores
+                console.error('Error:', error);
+                document.getElementById("postrespmsg").innerHTML = 'Hubo un error al enviar el formulario.';
+            });
+
+            // Evitar que el formulario se envíe de la manera tradicional
+            return false;
+        }
+
+        function previewFile() {
+            const file = document.getElementById('file').files[0];
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = "#";
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+</div>
 </body>
 </html>
