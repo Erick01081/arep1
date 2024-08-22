@@ -47,10 +47,10 @@ This will start the web server on port 8080.
 
 Running the Web Application
 
-To test the web application, open a web browser and navigate to http://localhost:8080. You should see the form-based web application, which includes the following features:
+To test the web application, open a web browser and navigate to http://localhost:8080/index.html. You should see the form-based web application, which includes the following features:
 
-1. Form with GET: This form submits a GET request to the server with a parameter, and the server's response is displayed.
-2. Form with POST: This form allows you to select a file and submit it to the server. The server will save the file and display a response.
+1. Form with GET: This form submits a GET request to the server with a parameter, and the server's response is displayed. The purpose of this GET function is to retrieve a static file using the provided filename and display it on the screen.
+2. Form with POST: This form allows you to select a file and submit it to the server. The server will save the file and display a response. The function of the POST method is to accept a file and a name, and then create a static file with the given information.
 
 
 ## Running the Tests
@@ -63,7 +63,7 @@ To deploy the web server on a live system, you can package the application as a 
 
 ## Built With
 
-* Java 8
+* Java 22
 * org.json library for parsing JSON
 * HTTP server implementation using Java's built-in networking libraries
 
