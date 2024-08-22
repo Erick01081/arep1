@@ -115,24 +115,29 @@
         }
 
         function loadFileMsg() {
-            // Obtener el valor del campo name
-            let nameVar = document.getElementById("postName").value;
-            // Obtener el archivo seleccionado
-            let fileInput = document.getElementById("file");
-            let file = fileInput.files[0];
+    // Obtener el archivo seleccionado
+    let fileInput = document.getElementById("file");
+    let file = fileInput.files[0];
+    let nameInput = document.getElementById("postName");
+    let name = nameInput.value;
 
-            // Crear un objeto FormData para enviar los datos del formulario
-            let formData = new FormData();
-            formData.append('name', nameVar);
-            if (file) {
-                formData.append('file', file);
-            }
-
+    if (file) {
+        // Leer el archivo como Base64
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            // Crear el objeto JSON a enviar en el cuerpo de la petición
+            const data = {
+                name: name,
+                content: event.target.result // Esto contiene el archivo en Base64
+            };
 
             // Enviar los datos usando Fetch API
-            fetch("/" + nameVar, {
+            fetch("/", {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
             })
             .then(response => response.text())
             .then(responseText => {
@@ -144,10 +149,18 @@
                 console.error('Error:', error);
                 document.getElementById("postrespmsg").innerHTML = 'Hubo un error al enviar el formulario.';
             });
+        };
 
-            // Evitar que el formulario se envíe de la manera tradicional
-            return false;
-        }
+        // Leer el archivo como DataURL (Base64)
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById("postrespmsg").innerHTML = 'Por favor, selecciona un archivo antes de enviar.';
+    }
+
+    // Evitar que el formulario se envíe de la manera tradicional
+    return false;
+}
+
 
         function previewFile() {
             const file = document.getElementById('file').files[0];

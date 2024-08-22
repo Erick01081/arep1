@@ -65,42 +65,50 @@ class ClientHandler implements Runnable {
         System.out.println("Prueba1");
         int contentLength = 0;
         String line;
-        while (!(line = in.readLine()).isEmpty()) {
+        while ((line = in.readLine()) != null && !line.isEmpty()) {
             if (line.startsWith("Content-Length:")) {
                 contentLength = Integer.parseInt(line.split(":")[1].trim());
             }
         }
         System.out.println("Prueba2");
 
-        // Leer el cuerpo del POST
-        StringBuilder payload = new StringBuilder(contentLength);
-        char[] buffer = new char[1024];
-        int bytesRead;
-        int totalBytesRead = 0;
+        // Leer el cuerpo del POST según Content-Length
+        char[] buffer = new char[contentLength];
+        int bytesRead = in.read(buffer, 0, contentLength);
 
-        while (totalBytesRead < contentLength && (bytesRead = in.read(buffer, 0, Math.min(buffer.length, contentLength - totalBytesRead))) != -1) {
-            payload.append(buffer, 0, bytesRead);
-            totalBytesRead += bytesRead;
+        if (bytesRead != contentLength) {
+            System.out.println("Error: el contenido leído no coincide con Content-Length");
+            out.println("HTTP/1.1 400 Bad Request");
+            out.println("Content-Type: text/plain");
+            out.println();
+            out.println("Error: Content-Length mismatch");
+            out.flush();
+            return;
         }
 
-        String body = payload.toString();
-        System.out.println("Body completo: " + body);
+        String body = new String(buffer);
+        System.out.println("Prueba3");
 
         // Extraer el nombre del archivo usando org.json
         String fileName = "";
+        String fileContent = "";
         try {
             JSONObject json = new JSONObject(body);
             fileName = json.getString("name");
+            fileContent = json.getString("content");  // Asumiendo que el contenido del archivo está bajo "content"
             System.out.println("Nombre del archivo extraído: " + fileName);
         } catch (Exception e) {
             e.printStackTrace();
             fileName = "default.txt";
+            fileContent = body;  // Si no se encuentra un JSON válido, escribir todo el cuerpo del POST
         }
+        System.out.println("Prueba4");
 
         // Escribir el contenido del cuerpo en el archivo
         try (FileWriter fileWriter = new FileWriter(new File(SimpleWebServer.WEB_ROOT, fileName))) {
-            fileWriter.write(body);
+            fileWriter.write(fileContent);
         }
+        System.out.println("Prueba5");
 
         // Responder al cliente
         out.println("HTTP/1.1 200 OK");
@@ -108,7 +116,9 @@ class ClientHandler implements Runnable {
         out.println();
         out.println("File created: " + fileName);
         out.flush();
+        System.out.println("Prueba6");
     }
+
 
 
 
